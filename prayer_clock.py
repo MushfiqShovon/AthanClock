@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
 import requests
 import datetime
 import time
 import os
     
-# Get absolute path of the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ========= CONFIG =========
