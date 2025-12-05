@@ -166,5 +166,3 @@ This project is open source and available for personal and educational use.
 For issues, questions, or suggestions, please open an issue on the [GitHub repository](https://github.com/MushfiqShovon/AthanClock).
 
 ---
-
-**Made with ❤️ for the Muslim community**

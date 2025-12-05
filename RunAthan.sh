@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# ==== CONFIG ====
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PY_SCRIPT="$SCRIPT_DIR/prayer_clock.py"
 PACKAGES=("python3" "espeak" "mpg123")
-# ================
 
 echo "=== Athan Clock Setup Starting ==="
 
@@ -28,6 +26,6 @@ done
 echo "=== All required software installed ==="
 
 # Run the python script
-echo "▶ Running prayer_clock.py..."
+echo "Running prayer_clock.py..."
 python3 "$PY_SCRIPT"
 
