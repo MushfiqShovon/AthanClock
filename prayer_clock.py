@@ -9,7 +9,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CITY = "Morgantown"
 COUNTRY = "USA"
 METHOD = 2  # Muslim World League calculation method
-#ATHAN_FILE = "~/athan/athan_fajr.mp3"  # Path to your Athan file
 ATHAN_FILES = {
     "Fajr": os.path.join(SCRIPT_DIR, "athan_fajr.mp3"),
     "Isha": os.path.join(SCRIPT_DIR, "athan_esha.mp3"),
@@ -18,8 +17,8 @@ ATHAN_FILES = {
     "Maghrib": os.path.join(SCRIPT_DIR, "athan_durd.mp3")
 }
 
-#PLAYER = "mpg123"  # Change to 'aplay' if using .wav
-PLAYER = "mpg123 -a hw:0,0"
+PLAYER = "mpg123"  # Change to 'aplay' if using .wav
+#PLAYER = "mpg123 -a hw:0,0"
 # ==========================
 
 def get_prayer_times():
@@ -47,12 +46,7 @@ def parse_times(timings):
         prayer_times.append((name, dt))
     return prayer_times
 
-#def play_athan():
-#    """Play the Athan sound file."""
-#    print(ATHAN_FILE)
-#    os.system(f"{PLAYER} {ATHAN_FILE}")
-
-def play_athan_var(prayer_name):
+def play_athan(prayer_name):
     """Play the correct Athan sound file based on prayer name."""
     print(prayer_name)
     athan_file = ATHAN_FILES.get(prayer_name)
@@ -68,7 +62,7 @@ def play_athan_var(prayer_name):
 
 def main():
     os.system('espeak "Athan Application is started."')
-    #play_athan_var("Fajr")
+    #play_athan("Fajr") # for sound testing
     while True:
         timings = get_prayer_times()
         if not timings:
@@ -86,7 +80,7 @@ def main():
                 print(f"? Waiting {int(wait/60)} minutes for {name} at {pt.strftime('%H:%M')}")
                 time.sleep(wait)
                 print(f"? {name} time! Playing Athan...")
-                play_athan_var(name)
+                play_athan(name)
 
         # Sleep until just after midnight before re-fetching
         tomorrow = datetime.datetime.combine(datetime.date.today() + datetime.timedelta(days=1),
