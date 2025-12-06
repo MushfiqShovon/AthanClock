@@ -18,7 +18,6 @@ ATHAN_FILES = {
 }
 
 PLAYER = "mpg123"  # Change to 'aplay' if using .wav
-#PLAYER = "mpg123 -a hw:0,0"
 # ==========================
 
 def get_prayer_times():
