@@ -41,7 +41,7 @@ start_app() {
     fi
     
     echo "▶️  Starting Athan Clock in background..."
-    nohup pßython3 "$PY_SCRIPT" >> "$LOG_FILE" 2>&1 &
+    nohup python3 "$PY_SCRIPT" >> "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
     echo "✅ Athan Clock started successfully (PID: $(cat $PID_FILE))"
     echo "📄 Logs: $LOG_FILE"
