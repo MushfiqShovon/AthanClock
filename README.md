@@ -10,6 +10,9 @@ An automated Islamic prayer time application for Linux systems that fetches pray
 - 🔄 Auto-updates prayer times daily
 - 🗣️ Voice announcements using text-to-speech
 - 🚀 Easy setup with automated dependency installation
+- 🔧 Background service management (start, stop, restart)
+- 🌅 Optional auto-start on system boot
+- 📊 Built-in logging and status checking
 
 ## Prerequisites
 
@@ -25,15 +28,21 @@ This application is designed for **Linux systems** (tested on Debian/Ubuntu-base
 
 2. **Make the setup script executable:**
    ```bash
-   chmod +x RunAthan.sh
+3. **Install dependencies and set up the application:**
+   ```bash
+   ./RunAthan.sh install
    ```
 
-3. **Run the setup script:**
+   Or for a complete setup (install + start + enable startup):
    ```bash
    ./RunAthan.sh
    ```
 
-The `RunAthan.sh` script will automatically:
+The setup will automatically:
+- Check for required packages (`python3`, `espeak`, `mpg123`)
+- Install any missing dependencies
+- Start the application in background
+- Enable auto-start on system boottically:
 - Check for required packages (`python3`, `espeak`, `mpg123`)
 - Install any missing dependencies
 - Start the prayer clock application
@@ -47,7 +56,7 @@ Before running, you may want to customize the settings in `prayer_clock.py`:
 CITY = "Morgantown"           # Your city name
 COUNTRY = "USA"               # Your country
 METHOD = 2                    # Calculation method (see below)
-PLAYER = "mpg123 -a hw:0,0"  # Audio player command
+PLAYER = "mpg123"  # Audio player command
 # ==========================
 ```
 
@@ -67,37 +76,94 @@ For more methods, visit: [Aladhan API Documentation](http://api.aladhan.com/v1/m
 
 The application requires the following audio files in the project directory:
 
-- `athan_fajr.mp3` - For Fajr prayer
-- `athan_durd.mp3` - For Dhuhr, Asr, and Maghrib prayers
-- `athan_esha.mp3` - For Isha prayer
-
-**Note:** These audio files should be included in the repository. If missing, add your own MP3 files with these exact names.
-
 ## Usage
 
-### Manual Start
+The `RunAthan.sh` script provides easy management of the Athan Clock service:
+
+### Available Commands
+
+```bash
+./RunAthan.sh [command]
+```
+
+**Commands:**
+
+- `install` - Install required dependencies only
+- `start` - Start Athan Clock in background
+- `stop` - Stop the running Athan Clock
+- `restart` - Restart Athan Clock
+- `status` - Check if Athan Clock is running
+- `enable-startup` - Enable auto-start on system boot
+- `disable-startup` - Remove from system startup
+- `logs` - View the last 50 lines of application logs
+- *(no command)* - Complete setup: install + start + enable startup
+
+### Common Usage Examples
+
+**First time setup:**
+```bash
+./RunAthan.sh install    # Install dependencies
+./RunAthan.sh start      # Start the application
+./RunAthan.sh enable-startup  # Enable auto-start on boot
+```
+
+**Quick setup (all-in-one):**
+## How It Works
+
+1. **Fetches Prayer Times**: Uses the [Aladhan API](http://api.aladhan.com) to get daily prayer times based on your location
+2. **Calculates Wait Time**: Determines how long to wait until the next prayer
+3. **Plays Athan**: At each prayer time, plays the appropriate audio file
+4. **Daily Reset**: Automatically fetches new times at midnight for the next day
+5. **Background Service**: Runs as a daemon process, continuing even after terminal closes
+## Troubleshooting
+
+### Check Application Status
+```bash
+./RunAthan.sh status
+./RunAthan.sh logs
+```
+
+### No Sound Output
+- Check audio device configuration in `PLAYER` variable
+- Test with: `mpg123 athan_fajr.mp3`
+- For different audio output, modify: `mpg123 -a hw:X,Y` (find devices with `aplay -l`)
+- Check logs: `./RunAthan.sh logs`
+
+### Cannot Fetch Prayer Times
+- Check internet connection
+- Verify city/country names are correct in `prayer_clock.py`
+- The application will retry every 2 minutes if fetching fails
+- View errors with: `./RunAthan.sh logs`
+
+### Application Won't Start
+- Check if already running: `./RunAthan.sh status`
+- Stop and restart: `./RunAthan.sh restart`
+- Check for errors: `./RunAthan.sh logs`
+
+### Permission Denied
+```bash
+chmod +x RunAthan.sh
+chmod +x prayer_clock.py
+```
+
+### Remove from Startup
+If you no longer want the application to start automatically:
+```bash
+./RunAthan.sh disable-startup
+```
+
+### Completely Stop the Application
+```bash
+./RunAthan.sh stop
+./RunAthan.sh disable-startup
+```unAthan.sh disable-startup
+```
+
+### Manual Start (Advanced)
+If you prefer to run directly without the management script:
 ```bash
 python3 prayer_clock.py
-```
-
-### Start with Setup Script
-```bash
-./RunAthan.sh
-```
-
-### Run in Background
-To keep the application running even after closing the terminal:
-```bash
-nohup python3 prayer_clock.py &
-```
-
-### Auto-Start on Boot (Raspberry Pi/Linux)
-
-To run automatically on system startup, add to crontab:
-
-1. Open crontab editor:
-   ```bash
-   crontab -e
+```ntab -e
    ```
 
 2. Add this line (replace `/path/to/AthanClock` with actual path):
