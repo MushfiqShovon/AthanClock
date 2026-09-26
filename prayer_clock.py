@@ -1,37 +1,91 @@
+#!/usr/bin/env python3
 import requests
 import datetime
 import time
 import os
     
+# Get absolute path of the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ========= CONFIG =========
 CITY = "Morgantown"
-COUNTRY = "USA"
+STATE = "WV"
+COUNTRY = "US"
 METHOD = 2  # Muslim World League calculation method
+#ATHAN_FILE = "~/athan/athan_fajr.mp3"  # Path to your Athan file
 ATHAN_FILES = {
-    "Fajr": os.path.join(SCRIPT_DIR, "athan_fajr.mp3"),
+    #"Fajr": os.path.join(SCRIPT_DIR, "athan_fajr.mp3"),
     "Isha": os.path.join(SCRIPT_DIR, "athan_esha.mp3"),
     "Dhuhr": os.path.join(SCRIPT_DIR, "athan_durd.mp3"),
     "Asr": os.path.join(SCRIPT_DIR, "athan_durd.mp3"),
     "Maghrib": os.path.join(SCRIPT_DIR, "athan_durd.mp3")
 }
 
-PLAYER = "mpg123"  # Change to 'aplay' if using .wav
+#PLAYER = "mpg123"  # Change to 'aplay' if using .wav
+PLAYER = "mpg123 -a hw:0,0"
 # ==========================
 
 def get_prayer_times():
     """Fetch today's prayer times from Aladhan API."""
-    url = f"http://api.aladhan.com/v1/timingsByCity?city={CITY}&country={COUNTRY}&method={METHOD}"
+
+    url = "https://api.aladhan.com/v1/timingsByCity"
+
+    params = {
+        "city": CITY,
+        "state": STATE,
+        "country": COUNTRY,
+        "method": METHOD
+    }
+
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, params=params, timeout=10)
+
+        if response.status_code == 503:
+            print("Aladhan server is temporarily unavailable (503).")
+            return None
+
+        response.raise_for_status()
+
         data = response.json()
-        timings = data['data']['timings']
+
+        if data.get("code") != 200:
+            print("Aladhan API error:")
+            print(data)
+            return None
+
+        api_data = data.get("data")
+
+        if not isinstance(api_data, dict):
+            print("Unexpected API response:")
+            print(data)
+            return None
+
+        timings = api_data.get("timings")
+
+        if not isinstance(timings, dict):
+            print("Prayer timings missing:")
+            print(data)
+            return None
+
         return timings
-    except Exception as e:
-        print("? Error fetching prayer times:", e)
+
+    except requests.exceptions.Timeout:
+        print("Aladhan API request timed out.")
         return None
 
+    except requests.exceptions.ConnectionError:
+        print("Could not connect to Aladhan API.")
+        return None
+
+    except requests.exceptions.RequestException as e:
+        print("Network/API error:", e)
+        return None
+
+    except ValueError as e:
+        print("Invalid JSON response:", e)
+        return None
+        
+        
 def parse_times(timings):
     """Convert timings to datetime objects for today."""
     today = datetime.date.today()
@@ -45,7 +99,12 @@ def parse_times(timings):
         prayer_times.append((name, dt))
     return prayer_times
 
-def play_athan(prayer_name):
+#def play_athan():
+#    """Play the Athan sound file."""
+#    print(ATHAN_FILE)
+#    os.system(f"{PLAYER} {ATHAN_FILE}")
+
+def play_athan_var(prayer_name):
     """Play the correct Athan sound file based on prayer name."""
     print(prayer_name)
     athan_file = ATHAN_FILES.get(prayer_name)
@@ -61,7 +120,7 @@ def play_athan(prayer_name):
 
 def main():
     os.system('espeak "Athan Application is started."')
-    #play_athan("Fajr") # for sound testing
+    #play_athan_var("Fajr")
     while True:
         timings = get_prayer_times()
         if not timings:
@@ -79,7 +138,7 @@ def main():
                 print(f"? Waiting {int(wait/60)} minutes for {name} at {pt.strftime('%H:%M')}")
                 time.sleep(wait)
                 print(f"? {name} time! Playing Athan...")
-                play_athan(name)
+                play_athan_var(name)
 
         # Sleep until just after midnight before re-fetching
         tomorrow = datetime.datetime.combine(datetime.date.today() + datetime.timedelta(days=1),
