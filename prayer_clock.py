@@ -11,7 +11,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CITY = "Morgantown"
 STATE = "WV"
 COUNTRY = "US"
-METHOD = 2  # Muslim World League calculation method
+METHOD = 2  # ISNA calculation method (3 = Muslim World League)
 #ATHAN_FILE = "~/athan/athan_fajr.mp3"  # Path to your Athan file
 ATHAN_FILES = {
     #"Fajr": os.path.join(SCRIPT_DIR, "athan_fajr.mp3"),
@@ -20,9 +20,10 @@ ATHAN_FILES = {
     "Asr": os.path.join(SCRIPT_DIR, "athan_durd.mp3"),
     "Maghrib": os.path.join(SCRIPT_DIR, "athan_durd.mp3")
 }
+STARTUP_SOUND = os.path.join(SCRIPT_DIR, "startup.mp3")  # Played once when the app starts
 
 #PLAYER = "mpg123"  # Change to 'aplay' if using .wav
-PLAYER = "mpg123 -a hw:0,0"
+PLAYER = "mpg123 -q"  # plays through the default PipeWire/PulseAudio output
 # ==========================
 
 def get_prayer_times():
@@ -119,7 +120,9 @@ def play_athan_var(prayer_name):
         print(f"?? No Athan file found for {prayer_name}")
 
 def main():
-    os.system('espeak "Athan Application is started."')
+    print("Athan Application is started. Playing startup sound...")
+    status = os.system(f"{PLAYER} '{STARTUP_SOUND}'")
+    print("Startup sound played OK." if status == 0 else f"Startup sound FAILED (exit status {status}).")
     #play_athan_var("Fajr")
     while True:
         timings = get_prayer_times()
