@@ -12,6 +12,8 @@ set -e
 
 REPO_URL="https://github.com/MushfiqShovon/AthanClock.git"
 INSTALL_DIR="$HOME/AthanClock"
+# Only the app is downloaded; the website (docs/), dev tools and README are skipped
+SPARSE_PATTERNS=('/*' '!/docs/' '!/tools/' '!/README.md')
 
 # Everything is inside main so bash reads the whole script before running it
 # (needed when the script is piped from curl).
@@ -29,10 +31,15 @@ main() {
 
     if [ -d "$INSTALL_DIR/.git" ]; then
         echo "Updating existing install in $INSTALL_DIR..."
+        # Also trims older full installs down to just the app files
+        git -C "$INSTALL_DIR" sparse-checkout set --no-cone "${SPARSE_PATTERNS[@]}"
         git -C "$INSTALL_DIR" pull --ff-only
     else
         echo "Downloading Athan Clock into $INSTALL_DIR..."
-        git clone "$REPO_URL" "$INSTALL_DIR"
+        # Shallow, partial clone: files outside the sparse patterns are never downloaded
+        git clone --depth 1 --filter=blob:none --no-checkout "$REPO_URL" "$INSTALL_DIR"
+        git -C "$INSTALL_DIR" sparse-checkout set --no-cone "${SPARSE_PATTERNS[@]}"
+        git -C "$INSTALL_DIR" checkout
     fi
 
     chmod +x "$INSTALL_DIR/RunAthan.sh"

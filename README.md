@@ -35,7 +35,7 @@ Open a terminal and run (as your normal user, **not** with `sudo`):
 curl -fsSL https://raw.githubusercontent.com/MushfiqShovon/AthanClock/main/install.sh | bash
 ```
 
-This downloads the app into `~/AthanClock`, installs everything, asks for your city, and starts it as a background service that runs on every boot. Running the same command again updates to the latest version and keeps your location settings.
+This downloads the app into `~/AthanClock`, installs everything, asks for your city, and starts it as a background service that runs on every boot. Running the same command again updates to the latest version and keeps your location settings. Only the files the app needs are downloaded; the website (`docs/`), `tools/` and this README are left out.
 
 ### Manual install
 
