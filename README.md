@@ -225,15 +225,6 @@ chmod +x RunAthan.sh
 | `docs/` | Website, served by GitHub Pages (not downloaded by the installer) |
 | `tools/build_location_data.py` | Builds the website's Country → State → City lists |
 
-## Website
-
-The website lives in `docs/` and is served by GitHub Pages. It has no build step and uses no outside libraries.
-
-- **Turn it on (once):** on GitHub, open the repo's **Settings → Pages**, set *Source* to **Deploy from a branch**, choose branch **main** and folder **/docs**, and save. After a minute or two it's live at `https://mushfiqshovon.github.io/AthanClock/`.
-- **Preview locally:** `python3 -m http.server -d docs 8000`, then open http://localhost:8000
-- **Location lists:** `docs/data/` holds one small file per country, built from [GeoNames](https://www.geonames.org/) (every place with 5,000+ people). To refresh them, run `python3 tools/build_location_data.py`.
-- If you rename the repo or GitHub user, update `REPO` at the top of `docs/assets/app.js`, `REPO_URL` in `install.sh`, and the links in `docs/index.html`.
-
 ## Dependencies
 
 - **python3** and **python3-requests** - run the app and call the prayer times API
