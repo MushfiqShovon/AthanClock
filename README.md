@@ -20,6 +20,20 @@ This application is designed for **Linux systems** with systemd, tested on **Ras
 
 ## Installation
 
+### Quick install (one command)
+
+Open a terminal on the Pi and run (as your normal user, **not** with `sudo`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MushfiqShovon/AthanClock/main/install.sh | bash
+```
+
+This downloads the app into `~/AthanClock`, installs everything, and starts it as a background service that runs on every boot. Running the same command again updates to the latest version.
+
+Then set your city (see [Configuration](#configuration)) and run `~/AthanClock/RunAthan.sh restart`.
+
+### Manual install
+
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/MushfiqShovon/AthanClock.git
