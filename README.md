@@ -1,76 +1,80 @@
 # Athan Clock 🕌
 
-An automated Islamic prayer time application for Linux systems that fetches prayer times from the internet and plays Athan (call to prayer) at the correct times throughout the day.
+Plays the Athan (call to prayer) at every prayer time for your city, automatically. Made for a home server, Raspberry Pi or any Linux machine that runs 24/7 and is connected to a speaker. Install it once with a single command, and it keeps running in the background, even after a restart.
+
+🌐 **Website & easy installer: https://mushfiqshovon.github.io/AthanClock/**
 
 ## Features
 
-- 🌍 Automatically fetches prayer times based on your location
-- 🔔 Plays Athan audio files at each prayer time
-- 🎵 Different Athan recordings for different prayers
-- 🔄 Auto-updates prayer times daily
+- 🌍 Accurate daily prayer times for your location, from the [Aladhan API](https://aladhan.com/prayer-times-api)
+- 🗺️ Pick your country, state and city on the website; your location is built into the install command
+- 🔔 Plays the Athan at Dhuhr, Asr, Maghrib and Isha, each with its own recording (Fajr can be turned on)
 - 🔊 Startup chime so you can hear that the app is running
-- 🚀 One-command setup with automated dependency installation
-- 🔧 Runs as a systemd user service (start, stop, restart, status)
-- 🌅 Starts automatically on boot
+- 🚀 One-command install and update
+- 🔧 Runs in the background as a systemd user service and starts automatically on boot
+- 💤 Handles sleep/suspend: an Athan missed while the machine was asleep is skipped instead of played late
 - 📊 Built-in logging
 
-## Prerequisites
+## Requirements
 
+- A machine that stays on **24/7** and has a **speaker connected** (HDMI, headphone jack, USB…)
 - **Debian/Ubuntu-based Linux with systemd**, such as Raspberry Pi OS, Debian, Ubuntu or Linux Mint. The setup installs packages with `apt-get`.
-- A working sound output. Sound is played through the desktop audio server (PipeWire/PulseAudio), so it goes to whatever output is selected as default.
+- An internet connection (prayer times are fetched every day)
 
-Tested on Raspberry Pi OS (Bookworm, desktop). It also works on laptops and PCs that sleep: after waking up, the app catches up with the clock, and an Athan that was missed by more than 10 minutes is skipped instead of playing late.
+Tested on Raspberry Pi OS (Bookworm, desktop). Sound goes through the desktop audio server (PipeWire/PulseAudio) when there is one, so it plays on whatever output is selected as default.
 
 ## Installation
 
 ### Easiest: use the website
 
-Go to **https://mushfiqshovon.github.io/AthanClock/**, pick your country, state and city from the lists, and copy the install command it builds for you. Your location is included in the command, so there are no questions to answer.
+Go to **https://mushfiqshovon.github.io/AthanClock/**, pick your country, state and city from the lists, and copy the install command it builds for you. Paste it into a terminal and press Enter. Your location is included in the command, so there are no questions to answer.
 
-### Quick install (one command)
+### One command
 
-Open a terminal and run (as your normal user, **not** with `sudo`):
+Open a terminal and run (as your normal user, **not** with `sudo`; it asks for your password when needed):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MushfiqShovon/AthanClock/main/install.sh | bash
 ```
 
-This downloads the app into `~/AthanClock`, installs everything, asks for your city, and starts it as a background service that runs on every boot. Running the same command again updates to the latest version and keeps your location settings. Only the files the app needs are downloaded; the website (`docs/`), `tools/` and this README are left out.
+This downloads the app into `~/AthanClock`, installs the required packages, asks for your location, and starts it as a background service that runs on every boot. When you hear the chime, it's running.
+
+Only the files the app needs are downloaded; the website (`docs/`), `tools/` and this README are left out.
+
+### Updating
+
+Run the same install command again. It updates the app to the latest version and keeps your location settings.
 
 ### Manual install
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/MushfiqShovon/AthanClock.git
-   cd AthanClock
-   ```
+```bash
+git clone https://github.com/MushfiqShovon/AthanClock.git
+cd AthanClock
+./RunAthan.sh
+```
 
-2. **Run the setup script** (as your normal user, **not** with `sudo`; it asks for your password when needed):
-   ```bash
-   chmod +x RunAthan.sh
-   ./RunAthan.sh
-   ```
+`./RunAthan.sh` does the same setup as the one-command install. The service runs the app from the folder you cloned into, so don't move or delete that folder afterwards (if you do, run `./RunAthan.sh` again from the new location).
 
-That's it. The setup will:
-- Install any missing packages (`python3`, `python3-requests`, `mpg123`)
-- Ask for your city, country and calculation method (first time only), and show today's prayer times so you can check them
-- Create a systemd user service (`~/.config/systemd/user/prayerclock.service`)
-- Enable it to start automatically on boot (using `loginctl enable-linger`)
-- Start the app. You should hear the startup chime.
+## Turning it off, on, or removing it
 
-The service runs the app from the folder you cloned into, so don't move or delete that folder afterwards (if you do, run `./RunAthan.sh` again from the new location).
+With the one-command install, the app lives in `~/AthanClock`:
+
+| To… | Run |
+|---|---|
+| Pause it until the next restart | `~/AthanClock/RunAthan.sh stop` |
+| Turn it off completely (keeps settings) | `~/AthanClock/RunAthan.sh stop && ~/AthanClock/RunAthan.sh disable-startup` |
+| Turn it back on | `~/AthanClock/RunAthan.sh enable-startup && ~/AthanClock/RunAthan.sh start` |
+| Change location | `~/AthanClock/RunAthan.sh configure` |
+| Check that it's running | `~/AthanClock/RunAthan.sh status; ~/AthanClock/RunAthan.sh logs` |
+| Uninstall | `~/AthanClock/RunAthan.sh uninstall && rm -rf ~/AthanClock` |
 
 ## Configuration
 
 ### Location
 
-Setup asks for your location the first time. To change it later:
+Your location is stored in `config.json` in the app folder. It's created by the website's install command or by answering the setup questions, and it isn't tracked by git, so updates never overwrite it.
 
-```bash
-./RunAthan.sh configure
-```
-
-This saves your answers to `config.json` in the app folder (not tracked by git, so updates never overwrite it) and restarts the app. You can also edit `config.json` directly and run `./RunAthan.sh restart`:
+To change it, run `~/AthanClock/RunAthan.sh configure` (it shows today's prayer times so you can check them), or run a new install command from the website. You can also edit the file directly and run `~/AthanClock/RunAthan.sh restart`:
 
 ```json
 {
@@ -83,96 +87,76 @@ This saves your answers to `config.json` in the app folder (not tracked by git, 
 }
 ```
 
-`latitude`/`longitude` are optional (the website fills them in). With them, times are looked up by coordinates; without them, by city and country name.
+- `latitude`/`longitude` are optional (the website fills them in). With them, times are looked up by coordinates, which is the most reliable. Without them, times are looked up by city and country name.
+- `state` is optional. If a lookup with the state fails, the app automatically retries without it.
+- Without a `config.json`, the defaults at the top of `prayer_clock.py` are used (Morgantown, WV, US, method 2).
 
-Without a `config.json`, the defaults at the top of `prayer_clock.py` are used (Morgantown, WV, US).
+### Calculation method
 
-### Other settings
-
-These are at the top of `prayer_clock.py`:
-
-```python
-PLAYER = "mpg123 -q"          # Audio player command
-LATE_LIMIT_MINUTES = 10       # Skip an Athan that is this late (e.g. computer was asleep)
-```
-
-After changing them, apply with `./RunAthan.sh restart`.
-
-### Calculation Methods
-
-The `METHOD` parameter determines which calculation method to use for prayer times:
+`method` sets how prayer times are calculated. The website picks the usual method for your country; choose a different one if your local mosque uses it. Common methods:
 
 - `1` - University of Islamic Sciences, Karachi
-- `2` - Islamic Society of North America (ISNA) (default)
+- `2` - Islamic Society of North America (ISNA)
 - `3` - Muslim World League
 - `4` - Umm Al-Qura University, Makkah
 - `5` - Egyptian General Authority of Survey
 
-For more methods, visit: [Aladhan API Documentation](https://api.aladhan.com/v1/methods)
+Full list: [Aladhan calculation methods](https://api.aladhan.com/v1/methods)
 
-## Audio Files
+### Audio files
 
-The application uses the following audio files in the project directory:
+| File | Played for |
+|---|---|
+| `athan_durd.mp3` | Dhuhr, Asr and Maghrib |
+| `athan_esha.mp3` | Isha |
+| `athan_fajr.mp3` | Fajr (off by default) |
+| `startup.mp3` | Short chime when the app starts |
 
-- `athan_fajr.mp3` - For Fajr prayer (disabled by default; uncomment the `Fajr` line in `ATHAN_FILES` to enable)
-- `athan_durd.mp3` - For Dhuhr, Asr, and Maghrib prayers
-- `athan_esha.mp3` - For Isha prayer
-- `startup.mp3` - Short chime played when the app starts
+You can replace any of them with your own mp3 of the same name.
 
-**Note:** These audio files are included in the repository. You can replace any of them with your own mp3 of the same name.
+**To turn on the Fajr Athan:** open `prayer_clock.py`, remove the `#` in front of the `"Fajr"` line in `ATHAN_FILES`, save, and run `./RunAthan.sh restart`.
 
-## Usage
+### Other settings
 
-The `RunAthan.sh` script manages the Athan Clock service:
+At the top of `prayer_clock.py`:
+
+```python
+PLAYER = "mpg123 -q"          # Audio player command
+LATE_LIMIT_MINUTES = 10       # Skip an Athan that is this late (e.g. the machine was asleep)
+```
+
+After changing anything, apply it with `./RunAthan.sh restart`.
+
+## RunAthan.sh commands
+
+Run from the app folder (`~/AthanClock` with the one-command install):
 
 ```bash
 ./RunAthan.sh [command]
 ```
 
-**Commands:**
-
-- `install` - Install required dependencies only
-- `configure` - Set your city/country and calculation method
-- `start` - Start Athan Clock
-- `stop` - Stop Athan Clock
-- `restart` - Restart Athan Clock (use after editing the config)
-- `status` - Check if Athan Clock is running
-- `enable-startup` - Enable auto-start on system boot
-- `disable-startup` - Remove from system startup
-- `logs` - View the last 50 lines of application logs
-- `uninstall` - Stop the app and remove its background service (then delete the folder to remove it completely)
-- *(no command)* - Complete setup: install + enable startup + start
+| Command | What it does |
+|---|---|
+| *(no command)* or `setup` | Full setup: install packages, ask for location (first time only), enable on boot, start |
+| `install` | Install the required packages only |
+| `configure` | Set your city, country and calculation method |
+| `start` / `stop` / `restart` | Start, stop or restart the app |
+| `status` | Show whether the app is running |
+| `logs` | Show the last 50 log lines |
+| `enable-startup` / `disable-startup` | Turn starting on boot on or off |
+| `uninstall` | Stop the app and remove its background service |
 
 **Setup with a location, skipping the questions** (this is what the website's command does):
+
 ```bash
 ./RunAthan.sh setup --city 'Morgantown' --state 'West Virginia' --country 'United States' \
                     --method 2 --lat 39.6295 --lon -79.9559
 ```
-`--state`, `--method`, `--lat` and `--lon` are optional. With `--lat`/`--lon`, prayer times are looked up by coordinates, which is the most reliable.
 
-### Common Usage Examples
+`--state`, `--method`, `--lat` and `--lon` are optional.
 
-**First time setup:**
-```bash
-./RunAthan.sh
-```
+To run the app in the foreground for testing, stop the service first so the Athan doesn't play twice:
 
-**Daily management:**
-```bash
-./RunAthan.sh status     # Check if running
-./RunAthan.sh stop       # Stop the application
-./RunAthan.sh start      # Start the application
-./RunAthan.sh restart    # Restart the application
-./RunAthan.sh logs       # View recent logs
-```
-
-**Disable auto-start:**
-```bash
-./RunAthan.sh disable-startup
-```
-
-### Manual Start (for testing)
-Stop the service first so the Athan doesn't play twice:
 ```bash
 ./RunAthan.sh stop
 python3 prayer_clock.py
@@ -180,90 +164,92 @@ python3 prayer_clock.py
 
 ## How It Works
 
-1. **Fetches Prayer Times**: Uses the [Aladhan API](https://aladhan.com/prayer-times-api) to get daily prayer times based on your location
-2. **Calculates Wait Time**: Determines how long to wait until the next prayer
-3. **Plays Athan**: At each prayer time, plays the appropriate audio file with `mpg123`
-4. **Daily Reset**: Automatically fetches new times after midnight for the next day
-5. **User Service**: Runs as a systemd *user* service so it can reach the desktop audio server; a system-wide service or cron job can't, which results in no sound
-6. **Auto-start**: Starts on boot, and systemd restarts it if it ever crashes
+1. **Fetches prayer times** for today from the Aladhan API, by coordinates when `config.json` has them, otherwise by city name.
+2. **Waits** until each prayer time, checking the real clock every 30 seconds so it stays on time even after the machine sleeps.
+3. **Plays the Athan** with `mpg123`. An Athan more than 10 minutes late (for example, the machine was asleep) is skipped.
+4. **Fetches new times** just after midnight, or right away after waking from a long sleep.
+5. **Runs as a systemd user service** (`~/.config/systemd/user/prayerclock.service`) so it can use your audio. A system-wide service or cron job can't reach the desktop audio server, which results in no sound. "Linger" is enabled so the service starts at boot, even before anyone logs in, and systemd restarts it if it ever crashes.
 
-### Service Management
-
-- **Service file**: `~/.config/systemd/user/prayerclock.service`
-- **Log File**: `prayerclock.log` in the project folder, containing all application output and errors
-- You can also use systemd directly: `systemctl --user status prayerclock`
+Everything the app prints goes to `prayerclock.log` in the app folder. You can also use systemd directly: `systemctl --user status prayerclock`.
 
 ## Troubleshooting
 
-### Check Application Status
+### Check that it's running
+
 ```bash
 ./RunAthan.sh status
 ./RunAthan.sh logs
 ```
 
-After each start the log should show:
+After each start, the log should show:
+
 ```
 Athan Application is started. Playing startup sound...
 Startup sound played OK.
+Location: Morgantown, West Virginia, United States (39.6295, -79.9559) (method 2)
+? Waiting 41 minutes for Isha at 20:24
 ```
 
-### No Sound Output
-- Check that the right output (HDMI / headphone jack) is selected as default in the desktop volume menu
-- Test with: `mpg123 startup.mp3`
-- Check logs: `./RunAthan.sh logs`. `Startup sound FAILED` means mpg123 couldn't play audio.
-- If you set up an older version of this app (system service or crontab), run `./RunAthan.sh` again; it removes the old setup
+### No sound
 
-### Cannot Fetch Prayer Times
-- Right after boot, one `Could not connect to Aladhan API` message is normal while the network comes up
-- Check internet connection
-- Verify your location with `./RunAthan.sh configure` (it shows today's times for what you enter)
-- The application will retry every 2 minutes if fetching fails
+- Check that the right output (HDMI / headphone jack) is selected as default in the desktop volume menu, then run `./RunAthan.sh restart`. You should hear the chime.
+- Test the speaker directly: `mpg123 startup.mp3`
+- `Startup sound FAILED` in the log means mpg123 couldn't play audio.
+- On a machine without a desktop (e.g. a server install), your user may need to be in the `audio` group: `sudo usermod -aG audio $USER`, then reboot.
+- If you set up an older version of this app (as a system service or from crontab), run `./RunAthan.sh` again; it removes the old setup.
 
-### Application Won't Start
-- Check if already running: `./RunAthan.sh status`
-- Stop and restart: `./RunAthan.sh restart`
-- Check for errors: `./RunAthan.sh logs`
+### Prayer times can't be fetched
 
-### Permission Denied
+- Right after boot, one `Could not connect to Aladhan API` message is normal while the network comes up. The app retries every 2 minutes.
+- Check the internet connection.
+- Check your location with `./RunAthan.sh configure` (it shows today's times for what you enter), or pick your city on the website, which uses coordinates.
+
+### Times are off by an hour or more
+
+The machine's clock must be set to the time zone of your location. Check with `timedatectl`, and change it with `sudo timedatectl set-timezone Your/Zone` (for example `America/New_York`).
+
+### Permission denied
+
 ```bash
 chmod +x RunAthan.sh
 ```
 
-### Completely Stop the Application
-```bash
-./RunAthan.sh stop
-./RunAthan.sh disable-startup
-```
+## Project Structure
 
-### Uninstall
-```bash
-./RunAthan.sh uninstall
-rm -rf ~/AthanClock
-```
+| Path | Purpose |
+|---|---|
+| `prayer_clock.py` | The app: fetches times and plays the Athan |
+| `RunAthan.sh` | Setup and service manager |
+| `install.sh` | One-command installer (downloads the app and runs setup) |
+| `*.mp3` | Athan recordings and the startup chime |
+| `docs/` | Website, served by GitHub Pages (not downloaded by the installer) |
+| `tools/build_location_data.py` | Builds the website's Country → State → City lists |
 
 ## Website
 
-The project website lives in the `docs/` folder and is served by GitHub Pages. It has no build step and uses no outside libraries.
+The website lives in `docs/` and is served by GitHub Pages. It has no build step and uses no outside libraries.
 
 - **Turn it on (once):** on GitHub, open the repo's **Settings → Pages**, set *Source* to **Deploy from a branch**, choose branch **main** and folder **/docs**, and save. After a minute or two it's live at `https://mushfiqshovon.github.io/AthanClock/`.
 - **Preview locally:** `python3 -m http.server -d docs 8000`, then open http://localhost:8000
-- **Location lists:** `docs/data/` holds one small file per country, built from [GeoNames](https://www.geonames.org/) (every place with 5,000+ people). To refresh it, run `python3 tools/build_location_data.py`.
-- If you rename the repo or GitHub user, update `REPO` at the top of `docs/assets/app.js` and the links in `docs/index.html`.
+- **Location lists:** `docs/data/` holds one small file per country, built from [GeoNames](https://www.geonames.org/) (every place with 5,000+ people). To refresh them, run `python3 tools/build_location_data.py`.
+- If you rename the repo or GitHub user, update `REPO` at the top of `docs/assets/app.js`, `REPO_URL` in `install.sh`, and the links in `docs/index.html`.
 
 ## Dependencies
 
-- **Python 3** - Programming language
-- **python3-requests** - HTTP library for API calls
-- **mpg123** - MP3 audio player
+- **python3** and **python3-requests** - run the app and call the prayer times API
+- **mpg123** - plays the mp3 files
 
-All dependencies are automatically installed by `RunAthan.sh`.
+All of them are installed automatically by the setup.
 
 ## API Reference
 
-This application uses the [Aladhan Prayer Times API](https://aladhan.com/prayer-times-api).
+Prayer times come from the [Aladhan Prayer Times API](https://aladhan.com/prayer-times-api). Example calls:
 
-Example API call:
 ```
+# By coordinates (used when config.json has latitude/longitude)
+https://api.aladhan.com/v1/timings/27-09-2026?latitude=39.6295&longitude=-79.9559&method=2
+
+# By city name
 https://api.aladhan.com/v1/timingsByCity?city=Morgantown&state=WV&country=US&method=2
 ```
 
@@ -277,8 +263,8 @@ This project is open source and available for personal and educational use.
 
 ## Acknowledgments
 
-- Prayer times provided by [Aladhan API](https://aladhan.com)
-- Developed for use on Raspberry Pi and Linux systems
+- Prayer times provided by [Aladhan](https://aladhan.com)
+- Place data © [GeoNames](https://www.geonames.org/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## Support
 
