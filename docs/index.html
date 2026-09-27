@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Athan Clock</title>
+  <meta name="description" content="Plays the Athan at every prayer time on your Raspberry Pi or Linux computer. One-command install, starts automatically on boot.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕌</text></svg>">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Free &amp; open source · Raspberry Pi &amp; Linux</p>
+      <h1>Athan Clock</h1>
+      <p class="lead">Plays the Athan at every prayer time for your city, automatically. Install it once with a single command, and it keeps running in the background, even after a restart.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#install">Install</a>
+        <a class="btn btn-ghost" id="github-link" href="https://github.com/MushfiqShovon/AthanClock">View on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrap" id="features">
+      <h2>What it does</h2>
+      <div class="features">
+        <div class="feature">
+          <h3>Athan at every prayer</h3>
+          <p>Dhuhr, Asr, Maghrib and Isha, each with its own recording. Fajr can be turned on too.</p>
+        </div>
+        <div class="feature">
+          <h3>Times for your city</h3>
+          <p>Fetches accurate times every day from the Aladhan prayer times service, using the calculation method you choose.</p>
+        </div>
+        <div class="feature">
+          <h3>Starts on its own</h3>
+          <p>Runs quietly in the background and starts again after every reboot. A short chime tells you it's running.</p>
+        </div>
+        <div class="feature">
+          <h3>Laptop friendly</h3>
+          <p>If your computer was asleep through a prayer, that Athan is skipped rather than played late.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="install">
+      <h2>Install</h2>
+      <p class="muted">Works on Raspberry Pi OS, Debian, Ubuntu, Linux Mint and other Debian/Ubuntu-based Linux systems with a desktop and sound.</p>
+
+      <div class="card">
+        <div class="step-head"><span class="step">1</span><h3>Choose your location</h3></div>
+
+        <div class="grid">
+          <label>Country
+            <select id="country" disabled><option>Loading…</option></select>
+          </label>
+          <label>State / region
+            <select id="state" disabled><option value="">Select a country first</option></select>
+          </label>
+          <label>City
+            <select id="city" disabled><option value="">Select a state first</option></select>
+          </label>
+          <label>Calculation method
+            <select id="method"></select>
+          </label>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" id="manual-toggle"> My city isn't in the list
+        </label>
+        <div id="manual" class="grid" hidden>
+          <label class="span-2">City name
+            <input type="text" id="manual-city" placeholder="e.g. Sylhet" autocomplete="off">
+          </label>
+          <p class="muted small span-2">Prayer times will be looked up by the city and country name. Check that the times shown below look right. If they don't, pick the nearest city from the list instead.</p>
+        </div>
+
+        <div id="preview" class="preview" hidden>
+          <p class="preview-title">Today's prayer times for <strong id="preview-place"></strong></p>
+          <div id="preview-times" class="times"></div>
+          <p id="preview-note" class="muted small"></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="step-head"><span class="step">2</span><h3>Copy the install command</h3></div>
+        <p id="command-hint" class="muted">Choose your location above and your settings will be built into the command. You can also copy it now and answer the questions in the terminal instead.</p>
+        <div class="command">
+          <code id="install-command"></code>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="copy-install" type="button">Copy install command</button>
+          <button class="btn btn-ghost" id="download-config" type="button" disabled>Download config.json</button>
+        </div>
+        <p class="muted small">Only need the settings file? <em>Download config.json</em> and put it in the app folder (<code>~/AthanClock</code>), then run <code>~/AthanClock/RunAthan.sh restart</code>.</p>
+      </div>
+
+      <div class="card">
+        <div class="step-head"><span class="step">3</span><h3>Run it in a terminal</h3></div>
+        <ol class="steps">
+          <li>Open <strong>Terminal</strong> (on Raspberry Pi: the black icon on the top bar, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd>).</li>
+          <li>Paste the command (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd>) and press <kbd>Enter</kbd>.</li>
+          <li>Type your password if it asks. It's needed once to install the sound player. Nothing is shown while you type, which is normal.</li>
+          <li>When you hear a short <strong>chime</strong>, Athan Clock is running. That's it!</li>
+        </ol>
+        <p class="muted small">Don't add <code>sudo</code> in front of the command. The app runs under your own user so it can use your speakers. Everything is installed in <code>~/AthanClock</code>. Running the same command again updates the app to the latest version.</p>
+      </div>
+    </section>
+
+    <section class="wrap" id="manage">
+      <h2>Turn it off, on, or remove it</h2>
+      <p class="muted">Open a terminal and run the command for what you want to do.</p>
+
+      <div class="manage">
+        <div class="manage-item">
+          <div>
+            <h3>Pause it for now</h3>
+            <p class="muted small">Stops the Athan until the next restart.</p>
+          </div>
+          <div class="command small-cmd"><code>~/AthanClock/RunAthan.sh stop</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="manage-item">
+          <div>
+            <h3>Turn it off completely</h3>
+            <p class="muted small">Stops it and keeps it from starting on boot. Your settings are kept.</p>
+          </div>
+          <div class="command small-cmd"><code>~/AthanClock/RunAthan.sh stop &amp;&amp; ~/AthanClock/RunAthan.sh disable-startup</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="manage-item">
+          <div>
+            <h3>Turn it back on</h3>
+            <p class="muted small">Starts it now and on every boot again.</p>
+          </div>
+          <div class="command small-cmd"><code>~/AthanClock/RunAthan.sh enable-startup &amp;&amp; ~/AthanClock/RunAthan.sh start</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="manage-item">
+          <div>
+            <h3>Change location</h3>
+            <p class="muted small">Answer the questions in the terminal, or pick a new city above and run the new install command.</p>
+          </div>
+          <div class="command small-cmd"><code>~/AthanClock/RunAthan.sh configure</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="manage-item">
+          <div>
+            <h3>Check that it's running</h3>
+            <p class="muted small">Shows the status and the recent log.</p>
+          </div>
+          <div class="command small-cmd"><code>~/AthanClock/RunAthan.sh status; ~/AthanClock/RunAthan.sh logs</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="manage-item">
+          <div>
+            <h3>Uninstall</h3>
+            <p class="muted small">Removes the background service and deletes the app folder.</p>
+          </div>
+          <div class="command small-cmd"><code>~/AthanClock/RunAthan.sh uninstall &amp;&amp; rm -rf ~/AthanClock</code><button class="copy" type="button">Copy</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="faq">
+      <h2>Questions</h2>
+      <details>
+        <summary>I don't hear anything</summary>
+        <p>Make sure the right speaker (HDMI or headphone jack) is selected in the volume menu on your desktop, then run <code>~/AthanClock/RunAthan.sh restart</code>. You should hear the chime. The log (<code>~/AthanClock/RunAthan.sh logs</code>) says <em>Startup sound played OK</em> when sound works.</p>
+      </details>
+      <details>
+        <summary>Can I hear the Athan for Fajr too?</summary>
+        <p>Yes. Open <code>~/AthanClock/prayer_clock.py</code>, remove the <code>#</code> in front of the <code>"Fajr"</code> line, save, and run <code>~/AthanClock/RunAthan.sh restart</code>.</p>
+      </details>
+      <details>
+        <summary>Which calculation method should I choose?</summary>
+        <p>The method suggested for your country is picked automatically. If your local mosque uses a different one, choose that instead. The times shown in step 1 update as you change it, so you can compare them with your mosque's timetable.</p>
+      </details>
+      <details>
+        <summary>Is it safe to run a command from a website?</summary>
+        <p>The command downloads <a href="https://github.com/MushfiqShovon/AthanClock/blob/main/install.sh">install.sh</a> from the project's GitHub and runs it. You can read that script first. It only installs <code>python3</code>, <code>python3-requests</code> and <code>mpg123</code>, and sets up the app under your user.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p class="muted small">
+      <a href="https://github.com/MushfiqShovon/AthanClock">Athan Clock on GitHub</a> ·
+      Prayer times by <a href="https://aladhan.com/prayer-times-api">Aladhan</a> ·
+      Place data © <a href="https://www.geonames.org/">GeoNames</a>, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>
+    </p>
+    <p class="muted small">Made with ❤️ for the Muslim community</p>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="assets/app.js"></script>
+</body>
+</html>

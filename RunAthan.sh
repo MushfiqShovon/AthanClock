@@ -75,11 +75,13 @@ EOF
 import sys, requests
 city, state, country, method = sys.argv[1:]
 params = {"city": city, "country": country, "method": method}
-if state:  # An empty state makes the API's location lookup fail
-    params["state"] = state
+# The API's city lookup often fails with a state, so fall back to city + country
+attempts = [{**params, "state": state}, params] if state else [params]
 try:
-    r = requests.get("https://api.aladhan.com/v1/timingsByCity", params=params, timeout=10)
-    data = r.json()
+    for p in attempts:
+        data = requests.get("https://api.aladhan.com/v1/timingsByCity", params=p, timeout=10).json()
+        if data.get("code") == 200:
+            break
     t = data["data"]["timings"]
     tz = data["data"]["meta"]["timezone"]
     print(f"Today's times ({tz}):")
@@ -166,6 +168,60 @@ show_logs() {
     fi
 }
 
+uninstall_app() {
+    systemctl --user disable --now "$SERVICE_NAME" 2>/dev/null || true
+    rm -f "$SERVICE_FILE"
+    systemctl --user daemon-reload
+    echo "Athan Clock service removed. It will not run again."
+    echo "To delete the app files too, run:  rm -rf '$SCRIPT_DIR'"
+}
+
+# Write config.json from setup options (used by the website's install command)
+save_config() {
+    python3 - "$CONFIG_FILE" "$@" <<'EOF'
+import json, sys
+path, city, state, country, method, lat, lon = sys.argv[1:]
+config = {"city": city, "state": state, "country": country, "method": int(method)}
+if lat and lon:
+    config["latitude"] = float(lat)
+    config["longitude"] = float(lon)
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(config, f, indent=2, ensure_ascii=False)
+EOF
+    echo "Location saved to $CONFIG_FILE: $city${state:+, $state}, $country (method $method)"
+}
+
+setup() {
+    local city="" state="" country="" method="" lat="" lon=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --city)    city="$2"; shift 2 ;;
+            --state)   state="$2"; shift 2 ;;
+            --country) country="$2"; shift 2 ;;
+            --method)  method="$2"; shift 2 ;;
+            --lat)     lat="$2"; shift 2 ;;
+            --lon)     lon="$2"; shift 2 ;;
+            *) echo "Unknown option: $1"; usage; exit 1 ;;
+        esac
+    done
+    if [ -n "$method" ] && ! [[ "$method" =~ ^[0-9]+$ ]]; then
+        echo "--method must be a number"; exit 1
+    fi
+    num='^-?[0-9]+(\.[0-9]+)?$'
+    if { [ -n "$lat" ] && ! [[ "$lat" =~ $num ]]; } || { [ -n "$lon" ] && ! [[ "$lon" =~ $num ]]; }; then
+        echo "--lat and --lon must be numbers"; exit 1
+    fi
+
+    install_deps
+    if [ -n "$city" ] && [ -n "$country" ]; then
+        save_config "$city" "$state" "$country" "${method:-2}" "$lat" "$lon"
+    elif [ ! -f "$CONFIG_FILE" ]; then
+        configure
+    fi
+    enable_startup
+    start_app
+}
+
 usage() {
     cat <<EOF
 Usage: $0 [command]
@@ -180,7 +236,11 @@ Commands:
   enable-startup   Start Athan Clock automatically on boot
   disable-startup  Do not start Athan Clock on boot
   logs             Show the last 50 log lines
+  uninstall        Stop Athan Clock and remove its service
   (no command)     Full setup: install + configure (first time) + enable-startup + start
+
+Setup options (skip the location questions):
+  $0 setup --city NAME --country NAME [--state NAME] [--method N] [--lat N --lon N]
 EOF
 }
 
@@ -197,12 +257,8 @@ case "${1:-}" in
     enable-startup)  enable_startup ;;
     disable-startup) disable_startup ;;
     logs)            show_logs ;;
-    "")
-        install_deps
-        [ -f "$CONFIG_FILE" ] || configure
-        enable_startup
-        start_app
-        ;;
+    uninstall)       uninstall_app ;;
+    ""|setup)        [ $# -gt 0 ] && shift; setup "$@" ;;
     -h|--help|help)  usage ;;
     *)               usage; exit 1 ;;
 esac

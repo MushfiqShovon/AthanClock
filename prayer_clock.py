@@ -9,11 +9,13 @@ import json
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ========= CONFIG =========
-# Location defaults; config.json (created by "./RunAthan.sh configure") overrides these
+# Location defaults; config.json (from the website or "./RunAthan.sh configure") overrides these
 CITY = "Morgantown"
 STATE = "WV"
 COUNTRY = "US"
 METHOD = 2  # ISNA calculation method (3 = Muslim World League)
+LATITUDE = None   # When set (the website adds these), times are looked up by
+LONGITUDE = None  # coordinates instead of by city name
 LATE_LIMIT_MINUTES = 10  # Skip an Athan that is this late (e.g. computer was asleep)
 #ATHAN_FILE = "~/athan/athan_fajr.mp3"  # Path to your Athan file
 ATHAN_FILES = {
@@ -34,23 +36,43 @@ if os.path.exists(CONFIG_FILE):
     with open(CONFIG_FILE) as f:
         _config = json.load(f)
     CITY = _config.get("city", CITY)
-    STATE = _config.get("state", STATE)
+    STATE = _config.get("state", "")
     COUNTRY = _config.get("country", COUNTRY)
     METHOD = int(_config.get("method", METHOD))
+    LATITUDE = _config.get("latitude")
+    LONGITUDE = _config.get("longitude")
 
 def get_prayer_times():
     """Fetch today's prayer times from Aladhan API."""
 
-    url = "https://api.aladhan.com/v1/timingsByCity"
+    if LATITUDE is not None and LONGITUDE is not None:
+        today = datetime.date.today().strftime("%d-%m-%Y")
+        url = f"https://api.aladhan.com/v1/timings/{today}"
+        params = {
+            "latitude": LATITUDE,
+            "longitude": LONGITUDE,
+            "method": METHOD
+        }
+        return fetch_timings(url, params)
 
+    url = "https://api.aladhan.com/v1/timingsByCity"
     params = {
         "city": CITY,
         "country": COUNTRY,
         "method": METHOD
     }
-    if STATE:  # An empty state makes the API's location lookup fail
-        params["state"] = STATE
+    # The API's city lookup often fails when a state is given (or is empty),
+    # so try with the state first and fall back to city + country only
+    if STATE:
+        timings = fetch_timings(url, {**params, "state": STATE})
+        if timings:
+            return timings
+        print("Retrying without the state...")
+    return fetch_timings(url, params)
 
+
+def fetch_timings(url, params):
+    """Request prayer timings from the Aladhan API; returns None on failure."""
     try:
         response = requests.get(url, params=params, timeout=10)
 
@@ -148,7 +170,10 @@ def main():
     print("Athan Application is started. Playing startup sound...")
     status = os.system(f"{PLAYER} '{STARTUP_SOUND}'")
     print("Startup sound played OK." if status == 0 else f"Startup sound FAILED (exit status {status}).")
-    print(f"Location: {CITY}, {STATE}, {COUNTRY} (method {METHOD})")
+    location = ", ".join(part for part in (CITY, STATE, COUNTRY) if part)
+    if LATITUDE is not None and LONGITUDE is not None:
+        location += f" ({LATITUDE}, {LONGITUDE})"
+    print(f"Location: {location} (method {METHOD})")
     #play_athan_var("Fajr")
     while True:
         fetch_date = datetime.date.today()

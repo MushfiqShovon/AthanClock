@@ -23,6 +23,10 @@ Tested on Raspberry Pi OS (Bookworm, desktop). It also works on laptops and PCs 
 
 ## Installation
 
+### Easiest: use the website
+
+Go to **https://mushfiqshovon.github.io/AthanClock/**, pick your country, state and city from the lists, and copy the install command it builds for you. Your location is included in the command, so there are no questions to answer.
+
 ### Quick install (one command)
 
 Open a terminal and run (as your normal user, **not** with `sudo`):
@@ -71,11 +75,15 @@ This saves your answers to `config.json` in the app folder (not tracked by git, 
 ```json
 {
   "city": "Morgantown",
-  "state": "WV",
-  "country": "US",
-  "method": 2
+  "state": "West Virginia",
+  "country": "United States",
+  "method": 2,
+  "latitude": 39.6295,
+  "longitude": -79.9559
 }
 ```
+
+`latitude`/`longitude` are optional (the website fills them in). With them, times are looked up by coordinates; without them, by city and country name.
 
 Without a `config.json`, the defaults at the top of `prayer_clock.py` are used (Morgantown, WV, US).
 
@@ -132,7 +140,15 @@ The `RunAthan.sh` script manages the Athan Clock service:
 - `enable-startup` - Enable auto-start on system boot
 - `disable-startup` - Remove from system startup
 - `logs` - View the last 50 lines of application logs
+- `uninstall` - Stop the app and remove its background service (then delete the folder to remove it completely)
 - *(no command)* - Complete setup: install + enable startup + start
+
+**Setup with a location, skipping the questions** (this is what the website's command does):
+```bash
+./RunAthan.sh setup --city 'Morgantown' --state 'West Virginia' --country 'United States' \
+                    --method 2 --lat 39.6295 --lon -79.9559
+```
+`--state`, `--method`, `--lat` and `--lon` are optional. With `--lat`/`--lon`, prayer times are looked up by coordinates, which is the most reliable.
 
 ### Common Usage Examples
 
@@ -218,6 +234,21 @@ chmod +x RunAthan.sh
 ./RunAthan.sh stop
 ./RunAthan.sh disable-startup
 ```
+
+### Uninstall
+```bash
+./RunAthan.sh uninstall
+rm -rf ~/AthanClock
+```
+
+## Website
+
+The project website lives in the `docs/` folder and is served by GitHub Pages. It has no build step and uses no outside libraries.
+
+- **Turn it on (once):** on GitHub, open the repo's **Settings → Pages**, set *Source* to **Deploy from a branch**, choose branch **main** and folder **/docs**, and save. After a minute or two it's live at `https://mushfiqshovon.github.io/AthanClock/`.
+- **Preview locally:** `python3 -m http.server -d docs 8000`, then open http://localhost:8000
+- **Location lists:** `docs/data/` holds one small file per country, built from [GeoNames](https://www.geonames.org/) (every place with 5,000+ people). To refresh it, run `python3 tools/build_location_data.py`.
+- If you rename the repo or GitHub user, update `REPO` at the top of `docs/assets/app.js` and the links in `docs/index.html`.
 
 ## Dependencies
 

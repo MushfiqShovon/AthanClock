@@ -2,6 +2,10 @@
 # One-line installer for Athan Clock:
 #   curl -fsSL https://raw.githubusercontent.com/MushfiqShovon/AthanClock/main/install.sh | bash
 #
+# Optional location settings (the website builds these for you):
+#   ... | bash -s -- --city 'Morgantown' --state 'West Virginia' --country 'United States' \
+#                    --method 2 --lat 39.6295 --lon -79.9559
+#
 # Downloads (or updates) the app into ~/AthanClock and runs the full setup.
 
 set -e
@@ -32,12 +36,13 @@ main() {
     fi
 
     chmod +x "$INSTALL_DIR/RunAthan.sh"
-    "$INSTALL_DIR/RunAthan.sh" < /dev/null
+    "$INSTALL_DIR/RunAthan.sh" setup "$@" < /dev/null
 
     echo
     echo "Done! Athan Clock is installed in $INSTALL_DIR and will start on every boot."
-    echo "To change your location later, run:"
-    echo "  $INSTALL_DIR/RunAthan.sh configure"
+    echo "Change location:   $INSTALL_DIR/RunAthan.sh configure"
+    echo "Turn it off:       $INSTALL_DIR/RunAthan.sh stop && $INSTALL_DIR/RunAthan.sh disable-startup"
+    echo "Remove it:         $INSTALL_DIR/RunAthan.sh uninstall"
 }
 
 main "$@"
