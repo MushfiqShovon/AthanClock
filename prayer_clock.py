@@ -3,15 +3,18 @@ import requests
 import datetime
 import time
 import os
-    
+import json
+
 # Get absolute path of the directory where this script is located
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ========= CONFIG =========
+# Location defaults; config.json (created by "./RunAthan.sh configure") overrides these
 CITY = "Morgantown"
 STATE = "WV"
 COUNTRY = "US"
 METHOD = 2  # ISNA calculation method (3 = Muslim World League)
+LATE_LIMIT_MINUTES = 10  # Skip an Athan that is this late (e.g. computer was asleep)
 #ATHAN_FILE = "~/athan/athan_fajr.mp3"  # Path to your Athan file
 ATHAN_FILES = {
     #"Fajr": os.path.join(SCRIPT_DIR, "athan_fajr.mp3"),
@@ -26,6 +29,15 @@ STARTUP_SOUND = os.path.join(SCRIPT_DIR, "startup.mp3")  # Played once when the 
 PLAYER = "mpg123 -q"  # plays through the default PipeWire/PulseAudio output
 # ==========================
 
+CONFIG_FILE = os.path.join(SCRIPT_DIR, "config.json")
+if os.path.exists(CONFIG_FILE):
+    with open(CONFIG_FILE) as f:
+        _config = json.load(f)
+    CITY = _config.get("city", CITY)
+    STATE = _config.get("state", STATE)
+    COUNTRY = _config.get("country", COUNTRY)
+    METHOD = int(_config.get("method", METHOD))
+
 def get_prayer_times():
     """Fetch today's prayer times from Aladhan API."""
 
@@ -33,10 +45,11 @@ def get_prayer_times():
 
     params = {
         "city": CITY,
-        "state": STATE,
         "country": COUNTRY,
         "method": METHOD
     }
+    if STATE:  # An empty state makes the API's location lookup fail
+        params["state"] = STATE
 
     try:
         response = requests.get(url, params=params, timeout=10)
@@ -119,12 +132,26 @@ def play_athan_var(prayer_name):
     else:
         print(f"?? No Athan file found for {prayer_name}")
 
+def sleep_until(target):
+    """Sleep until the wall clock reaches target.
+
+    Sleeps in short steps and re-checks the real time, because time.sleep()
+    does not count time spent in suspend; one long sleep would wake up late.
+    """
+    while True:
+        remaining = (target - datetime.datetime.now()).total_seconds()
+        if remaining <= 0:
+            return
+        time.sleep(min(remaining, 30))
+
 def main():
     print("Athan Application is started. Playing startup sound...")
     status = os.system(f"{PLAYER} '{STARTUP_SOUND}'")
     print("Startup sound played OK." if status == 0 else f"Startup sound FAILED (exit status {status}).")
+    print(f"Location: {CITY}, {STATE}, {COUNTRY} (method {METHOD})")
     #play_athan_var("Fajr")
     while True:
+        fetch_date = datetime.date.today()
         timings = get_prayer_times()
         if not timings:
             print("?? Failed to fetch times, retrying in 2 mins...")
@@ -139,17 +166,20 @@ def main():
 
             if wait > 0:
                 print(f"? Waiting {int(wait/60)} minutes for {name} at {pt.strftime('%H:%M')}")
-                time.sleep(wait)
+                sleep_until(pt)
+                late = (datetime.datetime.now() - pt).total_seconds() / 60
+                if late > LATE_LIMIT_MINUTES:
+                    print(f"? Skipping {name}: woke up {int(late)} minutes late (was the computer asleep?)")
+                    continue
                 print(f"? {name} time! Playing Athan...")
                 play_athan_var(name)
 
-        # Sleep until just after midnight before re-fetching
-        tomorrow = datetime.datetime.combine(datetime.date.today() + datetime.timedelta(days=1),
+        # Sleep until just after midnight before re-fetching. Based on the day the
+        # times were fetched, so waking from a long suspend re-fetches right away.
+        tomorrow = datetime.datetime.combine(fetch_date + datetime.timedelta(days=1),
                                              datetime.time(0, 5))
-        wait_tomorrow = (tomorrow - datetime.datetime.now()).total_seconds()
         print("? Done for today. Sleeping until tomorrow...")
-        # os.system('espeak "Done for today. Sleeping until tomorrow."')
-        time.sleep(wait_tomorrow)
+        sleep_until(tomorrow)
 
 if __name__ == "__main__":
     main()

@@ -10,6 +10,7 @@ SERVICE_NAME="prayerclock.service"
 SERVICE_DIR="$HOME/.config/systemd/user"
 SERVICE_FILE="$SERVICE_DIR/$SERVICE_NAME"
 LOG_FILE="$SCRIPT_DIR/prayerclock.log"
+CONFIG_FILE="$SCRIPT_DIR/config.json"
 PACKAGES=(python3 python3-requests mpg123)
 
 if [ "$(id -u)" -eq 0 ]; then
@@ -34,6 +35,60 @@ install_deps() {
         sudo apt-get update
         sudo apt-get install -y "${missing[@]}"
     fi
+}
+
+configure() {
+    # Read answers from the terminal, even when this script was piped from curl
+    if ! { : < /dev/tty; } 2>/dev/null; then
+        echo "No terminal available, skipping location setup."
+        echo "Run '$0 configure' later to set your city."
+        return
+    fi
+
+    echo
+    echo "=== Location setup ==="
+    local city="" state="" country="" method=""
+    while [ -z "$city" ]; do
+        read -r -p "City (e.g. London): " city < /dev/tty
+    done
+    read -r -p "State/region (optional, press Enter to skip): " state < /dev/tty
+    while [ -z "$country" ]; do
+        read -r -p "Country (e.g. UK or United Kingdom): " country < /dev/tty
+    done
+    echo "Calculation method: 1=Karachi, 2=ISNA (North America), 3=Muslim World League,"
+    echo "                    4=Umm Al-Qura (Makkah), 5=Egyptian. Others: see README."
+    while ! [[ "$method" =~ ^[0-9]+$ ]]; do
+        read -r -p "Method [2]: " method < /dev/tty
+        method="${method:-2}"
+    done
+
+    python3 - "$CONFIG_FILE" "$city" "$state" "$country" "$method" <<'EOF'
+import json, sys
+path, city, state, country, method = sys.argv[1:]
+with open(path, "w") as f:
+    json.dump({"city": city, "state": state, "country": country, "method": int(method)}, f, indent=2)
+EOF
+    echo "Saved to $CONFIG_FILE"
+
+    # Show today's times so the user can confirm the location was understood
+    python3 - "$city" "$state" "$country" "$method" <<'EOF' || true
+import sys, requests
+city, state, country, method = sys.argv[1:]
+params = {"city": city, "country": country, "method": method}
+if state:  # An empty state makes the API's location lookup fail
+    params["state"] = state
+try:
+    r = requests.get("https://api.aladhan.com/v1/timingsByCity", params=params, timeout=10)
+    data = r.json()
+    t = data["data"]["timings"]
+    tz = data["data"]["meta"]["timezone"]
+    print(f"Today's times ({tz}):")
+    for name in ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"]:
+        print(f"  {name:8} {t[name]}")
+    print("If these look wrong, run './RunAthan.sh configure' again.")
+except Exception:
+    print("Could not check the location online right now; the app will retry when it runs.")
+EOF
 }
 
 write_service() {
@@ -117,6 +172,7 @@ Usage: $0 [command]
 
 Commands:
   install          Install required packages
+  configure        Set your city/country and calculation method
   start            Start Athan Clock
   stop             Stop Athan Clock
   restart          Restart Athan Clock
@@ -124,12 +180,16 @@ Commands:
   enable-startup   Start Athan Clock automatically on boot
   disable-startup  Do not start Athan Clock on boot
   logs             Show the last 50 log lines
-  (no command)     Full setup: install + enable-startup + start
+  (no command)     Full setup: install + configure (first time) + enable-startup + start
 EOF
 }
 
 case "${1:-}" in
     install)         install_deps ;;
+    configure)
+        configure
+        if systemctl --user is-active --quiet "$SERVICE_NAME"; then start_app; fi
+        ;;
     start)           start_app ;;
     stop)            stop_app ;;
     restart)         start_app ;;
@@ -137,7 +197,12 @@ case "${1:-}" in
     enable-startup)  enable_startup ;;
     disable-startup) disable_startup ;;
     logs)            show_logs ;;
-    "")              install_deps; enable_startup; start_app ;;
+    "")
+        install_deps
+        [ -f "$CONFIG_FILE" ] || configure
+        enable_startup
+        start_app
+        ;;
     -h|--help|help)  usage ;;
     *)               usage; exit 1 ;;
 esac

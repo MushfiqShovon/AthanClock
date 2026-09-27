@@ -36,8 +36,8 @@ main() {
 
     echo
     echo "Done! Athan Clock is installed in $INSTALL_DIR and will start on every boot."
-    echo "Set your city in $INSTALL_DIR/prayer_clock.py, then run:"
-    echo "  $INSTALL_DIR/RunAthan.sh restart"
+    echo "To change your location later, run:"
+    echo "  $INSTALL_DIR/RunAthan.sh configure"
 }
 
 main "$@"

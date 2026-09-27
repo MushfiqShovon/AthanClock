@@ -16,21 +16,22 @@ An automated Islamic prayer time application for Linux systems that fetches pray
 
 ## Prerequisites
 
-This application is designed for **Linux systems** with systemd, tested on **Raspberry Pi OS (Bookworm, desktop)**. Sound is played through the desktop audio server (PipeWire/PulseAudio), so it goes to whatever output is selected as default on your Pi.
+- **Debian/Ubuntu-based Linux with systemd**, such as Raspberry Pi OS, Debian, Ubuntu or Linux Mint. The setup installs packages with `apt-get`.
+- A working sound output. Sound is played through the desktop audio server (PipeWire/PulseAudio), so it goes to whatever output is selected as default.
+
+Tested on Raspberry Pi OS (Bookworm, desktop). It also works on laptops and PCs that sleep: after waking up, the app catches up with the clock, and an Athan that was missed by more than 10 minutes is skipped instead of playing late.
 
 ## Installation
 
 ### Quick install (one command)
 
-Open a terminal on the Pi and run (as your normal user, **not** with `sudo`):
+Open a terminal and run (as your normal user, **not** with `sudo`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/MushfiqShovon/AthanClock/main/install.sh | bash
 ```
 
-This downloads the app into `~/AthanClock`, installs everything, and starts it as a background service that runs on every boot. Running the same command again updates to the latest version.
-
-Then set your city (see [Configuration](#configuration)) and run `~/AthanClock/RunAthan.sh restart`.
+This downloads the app into `~/AthanClock`, installs everything, asks for your city, and starts it as a background service that runs on every boot. Running the same command again updates to the latest version and keeps your location settings.
 
 ### Manual install
 
@@ -48,6 +49,7 @@ Then set your city (see [Configuration](#configuration)) and run `~/AthanClock/R
 
 That's it. The setup will:
 - Install any missing packages (`python3`, `python3-requests`, `mpg123`)
+- Ask for your city, country and calculation method (first time only), and show today's prayer times so you can check them
 - Create a systemd user service (`~/.config/systemd/user/prayerclock.service`)
 - Enable it to start automatically on boot (using `loginctl enable-linger`)
 - Start the app. You should hear the startup chime.
@@ -56,19 +58,37 @@ The service runs the app from the folder you cloned into, so don't move or delet
 
 ## Configuration
 
-Before running, you may want to customize the settings in `prayer_clock.py`:
+### Location
 
-```python
-# ========= CONFIG =========
-CITY = "Morgantown"           # Your city name
-STATE = "WV"                  # Your state/region
-COUNTRY = "US"                # Your country
-METHOD = 2                    # Calculation method (see below)
-PLAYER = "mpg123 -q"          # Audio player command
-# ==========================
+Setup asks for your location the first time. To change it later:
+
+```bash
+./RunAthan.sh configure
 ```
 
-After changing the config, apply it with `./RunAthan.sh restart`.
+This saves your answers to `config.json` in the app folder (not tracked by git, so updates never overwrite it) and restarts the app. You can also edit `config.json` directly and run `./RunAthan.sh restart`:
+
+```json
+{
+  "city": "Morgantown",
+  "state": "WV",
+  "country": "US",
+  "method": 2
+}
+```
+
+Without a `config.json`, the defaults at the top of `prayer_clock.py` are used (Morgantown, WV, US).
+
+### Other settings
+
+These are at the top of `prayer_clock.py`:
+
+```python
+PLAYER = "mpg123 -q"          # Audio player command
+LATE_LIMIT_MINUTES = 10       # Skip an Athan that is this late (e.g. computer was asleep)
+```
+
+After changing them, apply with `./RunAthan.sh restart`.
 
 ### Calculation Methods
 
@@ -104,6 +124,7 @@ The `RunAthan.sh` script manages the Athan Clock service:
 **Commands:**
 
 - `install` - Install required dependencies only
+- `configure` - Set your city/country and calculation method
 - `start` - Start Athan Clock
 - `stop` - Stop Athan Clock
 - `restart` - Restart Athan Clock (use after editing the config)
@@ -179,7 +200,7 @@ Startup sound played OK.
 ### Cannot Fetch Prayer Times
 - Right after boot, one `Could not connect to Aladhan API` message is normal while the network comes up
 - Check internet connection
-- Verify city/state/country names are correct in `prayer_clock.py`
+- Verify your location with `./RunAthan.sh configure` (it shows today's times for what you enter)
 - The application will retry every 2 minutes if fetching fails
 
 ### Application Won't Start
